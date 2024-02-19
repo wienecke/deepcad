@@ -13,7 +13,7 @@ from deepcad.test_collection import testing_class
 from deepcad.movie_display import display
 from deepcad.utils import get_first_filename,download_demo
 
-# %% Select file(s) to be processed (download if not present)
+# %% Select file(s) to be processed (download if not present) #
 download_demo_file = True
 if download_demo_file:
     file_name= 'fish_localbrain' # select the demo file you want to test (e.g. 'ATP_3D', 'fish_localbrain', 'NP_3D', ...)
