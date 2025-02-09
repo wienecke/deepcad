@@ -327,21 +327,23 @@ class training_class():
                     # Save model at the end of every epoch
                     self.save_model(epoch, iteration)
                     # Start inference using the denoise model at the end of every epoch (optional)
-                    if (self.visualize_images_per_epoch | self.save_test_images_per_epoch):
-                        print('Testing model of epoch {} on the first noisy file ----->'.format(epoch + 1))
-                        self.test(epoch, iteration)
-                        print('\n', end=' ')
+                    # CFRW COMMENTED THIS OUT 
+                    # if (self.visualize_images_per_epoch | self.save_test_images_per_epoch):
+                    #     print('Testing model of epoch {} on the first noisy file ----->'.format(epoch + 1))
+                    #     self.test(epoch, iteration)
+                    #     print('\n', end=' ')
         print('Training finished. All models saved to disk.')
         if self.colab_display:
-            result_img_list = []
-            results_path = self.pth_path
-            results_list = list(os.walk(results_path, topdown=False))[-1][-1]
-            for i in range(len(results_list)):
-              aaa = results_list[i]
-              if '.tif' in aaa:
-                 result_img_list.append(aaa)
-            result_img_list.sort()
-            self.result_display = results_path+'/'+result_img_list[-1]
+            if (self.visualize_images_per_epoch | self.save_test_images_per_epoch): #CFRW, colab_display is irrelevant outside notebooks, but setting to false causes another error; if not vis or save test image per epoch, skip this (see notes in denoise.py for these vars)
+                result_img_list = []
+                results_path = self.pth_path
+                results_list = list(os.walk(results_path, topdown=False))[-1][-1]
+                for i in range(len(results_list)):
+                    aaa = results_list[i]
+                    if '.tif' in aaa:
+                        result_img_list.append(aaa)
+                result_img_list.sort()
+                self.result_display = results_path+'/'+result_img_list[-1]
 
 
     def save_model(self, epoch, iteration):
@@ -447,30 +449,33 @@ class training_class():
                     = raw_patch
 
         # Stitching finish
-        output_img = denoise_img.squeeze().astype(np.float32) * self.scale_factor
-        del denoise_img
+        if (self.visualize_images_per_epoch | self.save_test_images_per_epoch):
+            denoise_img = denoise_img.squeeze().astype(np.float32) * self.scale_factor
 
         # Normalize and display inference image
         if (self.visualize_images_per_epoch):
             print('Displaying the first denoised file ----->')
             display_length = self.test_datasize
-            test_img_display(output_img, display_length=display_length, norm_min_percent=1, norm_max_percent=98)
+            test_img_display(denoise_img, display_length=display_length, norm_min_percent=1, norm_max_percent=98)
 
         # Save inference image
         if (self.save_test_images_per_epoch):
-            output_img = output_img[50:self.test_datasize-50, :, :]
+            denoise_img = denoise_img[50:self.test_datasize-50, :, :]
             if input_data_type == 'uint16':
-                output_img=np.clip(output_img, 0, 65535)
-                output_img = output_img.astype('uint16')
+                denoise_img=np.clip(denoise_img, 0, 65535)
+                denoise_img = denoise_img.astype('uint16')
 
             elif input_data_type == 'int16':
-                output_img=np.clip(output_img, -32767, 32767)
-                output_img = output_img.astype('int16')
+                denoise_img=np.clip(denoise_img, -32767, 32767)
+                denoise_img = denoise_img.astype('int16')
 
             else:
-                output_img = output_img.astype('int32')
+                denoise_img = denoise_img.astype('int32')
 
 
             result_name = self.pth_path + '//' + test_im_name.replace('.tif', '') + '_' + 'E_' + str(
                 train_epoch + 1).zfill(2) + '_Iter_' + str(train_iteration + 1).zfill(4) + '.tif'
-            io.imsave(result_name, output_img, check_contrast=False)
+            io.imsave(result_name, denoise_img, check_contrast=False)
+        
+        denoise_img[:] = 0
+

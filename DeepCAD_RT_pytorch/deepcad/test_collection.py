@@ -318,40 +318,42 @@ class testing_class():
                                 = raw_patch
 
                     # Stitching finish
-                    output_img = denoise_img.squeeze().astype(np.float32) * self.scale_factor
-                    del denoise_img
+                    if (self.visualize_images_per_epoch | self.save_test_images_per_epoch):
+                        denoise_img = denoise_img.squeeze().astype(np.float32) * self.scale_factor #don't make denoise_img if you're not using it, to save memory (if the recording is big, this could be a problem, use scopa reference images instead, created during do_stitch, when you're not on a gpu partition)
 
 
                     # Normalize and display inference image
                     if (self.visualize_images_per_epoch):
                         print('Displaying the denoised file ----->')
                         display_length = 200
-                        test_img_display(output_img, display_length=display_length, norm_min_percent=1,
+                        test_img_display(denoise_img, display_length=display_length, norm_min_percent=1,
                                          norm_max_percent=99)
 
                     # Save inference image
                     if (self.save_test_images_per_epoch):
                         if input_data_type == 'uint16':
-                            output_img=np.clip(output_img, 0, 65535)
-                            output_img = output_img.astype('uint16')
+                            denoise_img=np.clip(denoise_img, 0, 65535)
+                            denoise_img = denoise_img.astype('uint16')
 
                         elif input_data_type == 'int16':
-                            output_img=np.clip(output_img, -32767, 32767)
-                            output_img = output_img.astype('int16')
+                            denoise_img=np.clip(denoise_img, -32767, 32767)
+                            denoise_img = denoise_img.astype('int16')
 
                         else:
-                            output_img = output_img.astype('int32')
+                            denoise_img = denoise_img.astype('int32')
 
 
 
                         result_name = output_path_name + '//' + self.img_list[N].replace('.tif','') + '_' + pth_name.replace(
                             '.pth', '') + '_output.tif'
-                        io.imsave(result_name, output_img, check_contrast=False)
+                        io.imsave(result_name, denoise_img, check_contrast=False)
 
                     if pth_count == self.model_list_length:
                         if self.colab_display:
                             self.result_display = output_path_name + '//' + self.img_list[N].replace('.tif','') + '_' + pth_name.replace(
                             '.pth', '') + '_output.tif'
+
+                    denoise_img[:] = 0
 
 
         print('Testing finished. All results saved to disk.')
